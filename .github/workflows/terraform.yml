@@ -85,8 +85,10 @@ jobs:
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      - name: Simple deploy to Kubernetes cluster
-        uses: Jtalk/k8s-deploy@v2
+      - name: Verify Kubernetes connectivity
+        run: |
+          kubectl version --client
+          kubectl get nodes
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
         with:
