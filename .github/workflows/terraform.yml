@@ -78,32 +78,20 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
-        
+
+  
+      - name: Write kubeconfig
+        run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
+
+# Deploy to Kubernetes
       - name: Simple deploy to Kubernetes cluster
-        # You may pin to the exact commit or the version.
-        # uses: Jtalk/k8s-deploy@dbd56d528215e63ec2a51d1037c2f2796d5e1967
         uses: Jtalk/k8s-deploy@v2
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
         with:
-        # Choose the target Kubernetes namespace. If the namespace is not provided, the commands will run in the default namespace.
-          namespace: # optional
-        # Path to the manifest files which will be used for deployment.
-          manifests: # default is 
-        # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
-          images: # optional
-          # Name of a docker-registry secret that has already been set up within the cluster. Each of these secret names are added under imagePullSecrets field for the workloads found in the input manifest files
-          imagepullsecrets: # optional
-          # Version of kubectl. Installs a specific version of kubectl binary
-          kubectl-version: # optional
-          # Deployment strategy to be used. Allowed values are none, canary
-          strategy: # optional, default is none
-          # Traffic split method to be used. Allowed values are pod, smi
-          traffic-split-method: # optional, default is pod
-          # Baseline and canary replicas count; valid value i.e between 0 to 100.
-          baseline-and-canary-replicas: # optional, default is 0
-          # Percentage of traffic redirect to canary deployment
-          percentage: # optional, default is 0
-          # Arguments
-          args: # optional
-          # deploy/promote/reject
-          action: # default is deploy
+          namespace: default
+          manifests: |
+            k8s/deployment.yaml
+            k8s/service.yaml
+          kubectl-version: "1.28.0"
           
