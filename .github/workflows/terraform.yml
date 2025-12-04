@@ -18,11 +18,11 @@ jobs:
       TF_INPUT: false
 
     steps:
-      # 1. Checkout code
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Terraform
+      # 2. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
@@ -59,17 +59,17 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      # 1. Checkout code
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Terraform
+      # 2. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.9.0
 
-      # 3. Download Terraform plan
+      # 3. Download Terraform plan artifact
       - name: Download Terraform Plan
         uses: actions/download-artifact@v4
         with:
@@ -79,14 +79,18 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
-      # 5. Install kubectl
+      # 5. Write kubeconfig secret to file
+      - name: Write kubeconfig
+        run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
+
+      # 6. Install kubectl
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/v1.27.5/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      # 6. Optional: Verify Kubernetes connectivity
+      # 7. Verify Kubernetes connectivity
       - name: Verify Kubernetes connectivity
         run: |
           kubectl version --client
@@ -94,7 +98,7 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
-      # 7. Deploy Kubernetes manifests
+      # 8. Deploy Kubernetes manifests
       - name: Deploy to Kubernetes
         uses: Jtalk/k8s-deploy@v2
         env:
