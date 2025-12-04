@@ -100,5 +100,3 @@ jobs:
           baseline-and-canary-replicas: 0
           percentage: 0
           action: deploy
-              run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
-
