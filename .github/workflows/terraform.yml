@@ -81,7 +81,7 @@ jobs:
 
   
       - name: Write kubeconfig
-  run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
+        run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
 
       - name: Simple deploy to Kubernetes cluster
         uses: Jtalk/k8s-deploy@v2
