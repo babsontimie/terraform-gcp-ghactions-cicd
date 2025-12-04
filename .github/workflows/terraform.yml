@@ -79,9 +79,13 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
+      
   
-      - name: Write kubeconfig
-        run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
+      - name: Write kubeconfig- name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/v1.27.5/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
       - name: Simple deploy to Kubernetes cluster
         uses: Jtalk/k8s-deploy@v2
@@ -92,9 +96,11 @@ jobs:
           manifests: |
             k8s/deployment.yaml
             k8s/service.yaml
-          kubectl-version: "1.28"
+          kubectl-version: "1.27.5"
           strategy: none
           traffic-split-method: pod
           baseline-and-canary-replicas: 0
           percentage: 0
           action: deploy
+              run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
+
