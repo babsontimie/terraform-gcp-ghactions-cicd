@@ -86,4 +86,31 @@ jobs:
       # 6. Install kubectl
       - name: Install kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/v1.27.5/bin/linux/amd64/
+          curl -LO "https://dl.k8s.io/release/v1.27.5/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      # 7. Verify Kubernetes connectivity
+      - name: Verify Kubernetes connectivity
+        run: |
+          kubectl version --client
+          kubectl get nodes
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+
+      # 8. Deploy manifests
+      - name: Deploy to Kubernetes
+        uses: Jtalk/k8s-deploy@v2
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+        with:
+          namespace: default
+          manifests: |
+            k8s/deployment.yaml
+            k8s/service.yaml
+          kubectl-version: "1.27.5"
+          strategy: none
+          traffic-split-method: pod
+          baseline-and-canary-replicas: 0
+          percentage: 0
+          action: deploy
