@@ -1,4 +1,4 @@
-name: Terraform On-Prem + Kubernetes Pipeline
+name: Terraform + KIND + Kubernetes Deploy
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       TF_INPUT: false
 
     steps:
-      # 1. Checkout repository
+      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -32,15 +32,15 @@ jobs:
       - name: Terraform fmt
         run: terraform fmt -check
 
-      # 4. Initialize Terraform
+      # 4. Terraform init
       - name: Terraform Init
         run: terraform init
 
-      # 5. Validate Terraform configuration
+      # 5. Terraform validate
       - name: Terraform Validate
         run: terraform validate
 
-      # 6. Create Terraform plan
+      # 6. Terraform plan
       - name: Terraform Plan
         id: plan
         run: terraform plan -out=tfplan
@@ -53,13 +53,13 @@ jobs:
           path: tfplan
 
   apply:
-    name: Terraform Apply + Kubernetes Deploy
+    name: Terraform Apply + KIND + Kubernetes Deploy
     needs: terraform
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
-      # 1. Checkout repository
+      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -69,7 +69,7 @@ jobs:
         with:
           terraform_version: 1.9.0
 
-      # 3. Download Terraform plan artifact
+      # 3. Download plan artifact
       - name: Download Terraform Plan
         uses: actions/download-artifact@v4
         with:
@@ -79,18 +79,29 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
-      # 5. Write kubeconfig secret to file
-      - name: Write kubeconfig
-        run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
+      # 5. Install Docker (for KIND)
+      - name: Install Docker
+        uses: docker/setup-buildx-action@v2
 
-      # 6. Install kubectl
+      # 6. Install KIND
+      - name: Install KIND
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      # 7. Create KIND cluster
+      - name: Create KIND Cluster
+        run: kind create cluster --name ci-cluster --kubeconfig $GITHUB_WORKSPACE/kubeconfig
+
+      # 8. Install kubectl
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/v1.27.5/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      # 7. Verify Kubernetes connectivity
+      # 9. Verify Kubernetes connectivity
       - name: Verify Kubernetes connectivity
         run: |
           kubectl version --client
@@ -98,7 +109,7 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
-      # 8. Deploy Kubernetes manifests
+      # 10. Deploy manifests
       - name: Deploy to Kubernetes
         uses: Jtalk/k8s-deploy@v2
         env:
