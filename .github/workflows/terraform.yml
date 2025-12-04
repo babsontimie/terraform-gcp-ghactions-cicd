@@ -84,7 +84,8 @@ jobs:
         run: echo "${{ secrets.KUBE_CONFIG }}" > ${{ github.workspace }}/kubeconfig
 
       - name: Simple deploy to Kubernetes cluster
-        uses: Jtalk/k8s-deploy@v2
+        #uses: Jtalk/k8s-deploy@v2
+        uses: Jtalk/k8s-deploy@v1.7.0
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
         with:
