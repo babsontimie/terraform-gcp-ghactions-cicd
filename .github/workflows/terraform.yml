@@ -1,4 +1,4 @@
-name: Terraform On-Prem Pipeline
+name: Terraform On-Prem + Kubernetes Pipeline
 
 on:
   push:
@@ -11,42 +11,41 @@ on:
 
 jobs:
   terraform:
-    name: Terraform On-Prem Pipeline
+    name: Terraform Plan
     runs-on: ubuntu-latest
-
     env:
       TF_IN_AUTOMATION: true
       TF_INPUT: false
 
     steps:
-      # Checkout repository
+      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install Terraform
+      # 2. Install Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.9.0
 
-      # Format check
+      # 3. Terraform fmt check
       - name: Terraform fmt
         run: terraform fmt -check
 
-      # Initialize Terraform (local backend for on-prem)
+      # 4. Initialize Terraform
       - name: Terraform Init
         run: terraform init
 
-      # Validate Terraform code
+      # 5. Validate Terraform configuration
       - name: Terraform Validate
         run: terraform validate
 
-      # Terraform Plan
+      # 6. Create Terraform plan
       - name: Terraform Plan
         id: plan
         run: terraform plan -out=tfplan
 
-      # Upload plan as artifact
+      # 7. Upload plan artifact
       - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
         with:
@@ -54,41 +53,50 @@ jobs:
           path: tfplan
 
   apply:
-    name: Terraform Apply (Manual)
+    name: Terraform Apply + Kubernetes Deploy
     needs: terraform
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
+      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Install Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.9.0
 
-      - name: Download plan
+      # 3. Download Terraform plan
+      - name: Download Terraform Plan
         uses: actions/download-artifact@v4
         with:
           name: terraform-plan
 
-      - name: Terraform Init
-        run: terraform init
-
+      # 4. Apply Terraform plan
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
+      # 5. Install kubectl
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/v1.27.5/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
+      # 6. Optional: Verify Kubernetes connectivity
       - name: Verify Kubernetes connectivity
         run: |
           kubectl version --client
           kubectl get nodes
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig
+
+      # 7. Deploy Kubernetes manifests
+      - name: Deploy to Kubernetes
+        uses: Jtalk/k8s-deploy@v2
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig
         with:
